@@ -1,0 +1,777 @@
+# 🛠️ OncyTech Admin Panel — UI Build Guide
+
+> **For:** Intern Developer  
+> **Project:** OncyTech Website Admin Panel  
+> **Date:** March 30, 2026  
+> **Backend API Base URL:** `http://localhost:8000/api` (development)
+
+---
+
+## 📌 What Is This?
+
+You are building the **Admin Panel** for the OncyTech company website (oncytech.com). This admin panel will allow the OncyTech team to manage all the content on their website — blogs, team members, products, portfolio projects, customer inquiries, demo requests, job applications, and newsletter subscribers.
+
+---
+
+## 🧰 Recommended Tech Stack
+
+| Layer | Recommendation |
+|-------|---------------|
+| Framework | **Vite + React** |
+| Styling | **Tailwind CSS** |
+| Icons | **Lucide React** |
+| HTTP Client | **Axios** or **fetch** |
+| State Management | React Context or **Zustand** |
+| Date Formatting | **date-fns** or **dayjs** |
+| Rich Text Editor | **TipTap** or **React Quill** (for blog content) |
+| File Uploads | Standard `<input type="file">` with `FormData` |
+| Notifications/Toasts | **React Hot Toast** or **Sonner** |
+| Tables | Custom-built or **TanStack Table** |
+
+---
+
+## 🏗️ Application Architecture (Vite + React)
+
+```
+admin-panel/
+├── public/
+├── src/
+│   ├── assets/
+│   ├── components/                ← Reusable UI components
+│   │   ├── layout/
+│   │   │   ├── Sidebar.tsx
+│   │   │   ├── Topbar.tsx
+│   │   │   └── ProtectedLayout.tsx ← Sidebar + Topbar wrapper
+│   │   ├── ui/
+│   │   │   ├── Button.tsx
+│   │   │   ├── Input.tsx
+│   │   │   └── ... (Tables, Modals, Badges)
+│   │   └── shared/
+│   ├── hooks/                     ← Custom hooks (useAuth, useFetch)
+│   ├── layouts/                   ← Layout components
+│   ├── lib/                       ← API config (axios/fetch)
+│   ├── pages/                     ← Page components
+│   │   ├── auth/
+│   │   │   ├── Login.tsx
+│   │   │   └── ForgotPassword.tsx
+│   │   ├── Dashboard.tsx
+│   │   ├── Inquiries.tsx
+│   │   ├── blogs/
+│   │   │   ├── BlogList.tsx
+│   │   │   ├── CreateBlog.tsx
+│   │   │   └── EditBlog.tsx
+│   │   ├── Employees.tsx
+│   │   ├── Products.tsx
+│   │   ├── Portfolio.tsx
+│   │   ├── DemoRequests.tsx
+│   │   ├── JobApplications.tsx
+│   │   ├── Newsletter.tsx
+│   │   └── Settings.tsx
+│   ├── store/                     ← State management (Zustand/Context)
+│   ├── App.tsx                    ← Routing configuration
+│   └── main.tsx                   ← Entry point
+├── .env                           ← Environment variables
+├── index.html
+└── vite.config.ts
+```
+
+---
+
+## 🔐 Authentication Flow
+
+### How It Works
+- The backend uses **JWT tokens** stored in **HTTP-only cookies**
+- On login, the backend sets a `jwt` cookie automatically
+- All subsequent requests send this cookie automatically
+- You also receive a `token` in the response body as a fallback (store in localStorage)
+
+### Login Page (`/login`)
+
+**URL:** `/login`  
+**Layout:** Centered card, no sidebar
+
+**UI Elements:**
+- OncyTech logo at the top
+- "Admin Panel" title
+- Email input field (required)
+- Password input field (required, toggle show/hide)
+- "Sign In" button (full-width, gradient blue)
+- Loading spinner on button during API call
+- Error message display (red text below form)
+
+**API Call on Submit:**
+```
+POST /api/auth/login
+Body: { "email": "admin@oncytech.com", "password": "..." }
+```
+
+**On Success:** Store the token, redirect to `/dashboard` using `useNavigate()`  
+**On Error:** Show error message ("Incorrect email or password")
+
+**Auth Guard Logic (React Router):**
+- Create a `ProtectedRoute` component that wraps all dashboard routes
+- It should check for a user in your Auth Context/State
+- If no user is found, it should try to call `GET /api/auth/profile`
+- If that fails (401), use `navigate('/login')`
+- Use `react-router-dom` for all navigation
+
+---
+
+## 📐 Shared Layout (for all dashboard pages)
+
+### Sidebar (Left Side, Fixed)
+
+**Width:** 260px (desktop), collapsible on mobile  
+**Background:** Dark (`#0f172a` or `#111827`)
+
+**Logo Section:**
+- OncyTech logo at top
+- Below logo: small text "Admin Panel"
+
+**Navigation Links (with icons):**
+
+| Icon | Label | Route | Badge |
+|------|-------|-------|-------|
+| `LayoutDashboard` | Dashboard | `/dashboard` | — |
+| `MessageSquare` | Inquiries | `/inquiries` | 🔴 Count of NEW |
+| `FileText` | Blogs | `/blogs` | — |
+| `Users` | Team | `/employees` | — |
+| `Package` | Products | `/products` | — |
+| `Briefcase` | Portfolio | `/portfolio` | — |
+| `Calendar` | Demo Requests | `/demo-requests` | 🔴 Count of PENDING |
+| `UserPlus` | Applications | `/job-applications` | 🔴 Count of NEW |
+| `Mail` | Newsletter | `/newsletter` | — |
+| `Settings` | Settings | `/settings` | — |
+
+**Bottom of Sidebar:**
+- Logged-in user avatar/initials + name + role
+- Logout button
+
+### Topbar (Top, Fixed)
+
+**Height:** 64px  
+**Content:**
+- Left: Page title (dynamic based on current route, e.g., "Dashboard", "Inquiries")
+- Right: Search bar (optional), Notification bell (optional), User avatar dropdown with "Profile" and "Logout"
+
+---
+
+## 📄 Page-by-Page Breakdown
+
+---
+
+### PAGE 1: Dashboard (`/dashboard`)
+
+**Purpose:** Overview of all important metrics at a glance.
+
+#### Section 1: Stats Cards (top row, 4 cards in a grid)
+
+| Card | Value Source | Icon |
+|------|-------------|------|
+| Total Inquiries | Count of all inquiries | `MessageSquare` |
+| New Inquiries | Count where status = "NEW" | `AlertCircle` |
+| Published Blogs | Count where published = true | `FileText` |
+| Team Members | Count where isActive = true | `Users` |
+
+**Additional stat cards (second row):**
+
+| Card | Value Source | Icon |
+|------|-------------|------|
+| Total Products | Count of all products | `Package` |
+| Portfolio Projects | Count of all projects | `Briefcase` |
+| Pending Demos | Count where status = "PENDING" | `Calendar` |
+| Newsletter Subs | Count of all subscribers | `Mail` |
+
+**Design:** Each card has an icon with a light-colored background circle, the number (large font, bold), the label below, and optionally a small "+X this week" indicator.
+
+#### Section 2: Recent Inquiries (table, 5 latest)
+
+| Column | Description |
+|--------|-------------|
+| Name | Inquiry sender name |
+| Email | Sender email |
+| Status | Badge (NEW=blue, IN_PROGRESS=yellow, COMPLETED=green, REJECTED=red) |
+| Date | Formatted createdAt |
+| Action | "View" link |
+
+"View All" link → navigates to `/inquiries`
+
+#### Section 3: Recent Demo Requests (table, 5 latest)
+
+| Column | Description |
+|--------|-------------|
+| Name | Requester name |
+| Company | Company name |
+| Preferred Date | The requested date |
+| Status | Badge |
+| Action | "View" link |
+
+#### Section 4: Quick Actions (optional)
+
+Row of shortcut buttons:
+- "New Blog Post" → `/blogs/new`
+- "Add Team Member" → `/employees/new`
+- "Add Product" → `/products/new`
+
+**API Calls for this page:**
+```
+GET /api/admin/stats           ← New API needed (returns all counts)
+GET /api/inquiries?limit=5     ← Existing (needs pagination)
+GET /api/demo-requests?limit=5 ← New API needed
+```
+
+---
+
+### PAGE 2: Inquiries (`/inquiries`)
+
+**Purpose:** View and manage all inquiries submitted from the website (IdeaPopup, Contact Form).
+
+#### Top Section
+- Page title: "Inquiries"
+- Filter tabs: `All` | `New` | `In Progress` | `Completed` | `Rejected`
+- Search bar (search by name or email)
+
+#### Main Table
+
+| Column | Type | Sortable |
+|--------|------|----------|
+| # | Auto-increment row number | No |
+| Name | Text | Yes |
+| Email | Text (clickable, opens mailto) | Yes |
+| Phone | Text | No |
+| Budget | Text | No |
+| Source | Badge (e.g., "Landing Page", "Contact Form") | No |
+| Status | Colored Badge | No |
+| Date | Formatted date | Yes |
+| Actions | Dropdown: View, Edit Status, Delete | — |
+
+#### Click "View" → Inquiry Detail Modal/Drawer
+
+**Shows all fields:**
+- Name, Email, Phone, Budget
+- Project Brief (full text, multi-line)
+- Source, IP Address, User Agent
+- Status (with dropdown to change)
+- Admin Notes (editable textarea)
+- Created date, Updated date
+- "Save Changes" button (updates status + admin notes)
+- "Delete" button (with confirmation dialog)
+
+**API Calls:**
+```
+GET    /api/inquiries                    ← List all (with ?status=NEW filter)
+GET    /api/inquiries/:id               ← Get single inquiry
+PATCH  /api/inquiries/:id               ← Update status/notes
+DELETE /api/inquiries/:id               ← Delete inquiry
+```
+
+**Pagination:** Bottom of table — Page numbers, Previous/Next buttons, "Showing 1-10 of 47"
+
+---
+
+### PAGE 3: Blog Management (`/blogs`)
+
+**Purpose:** Create, edit, publish, and delete blog posts that appear on the Insights page.
+
+#### Blog List View (`/blogs`)
+
+**Top Section:**
+- Page title: "Blog Posts"
+- "New Blog Post" button (top-right, blue gradient)
+- Filter tabs: `All` | `Published` | `Drafts`
+- Search bar
+
+**Table/Card Layout:**
+
+| Column | Type |
+|--------|------|
+| Cover Image | Thumbnail (60x60) |
+| Title | Text (bold, clickable → edit page) |
+| Category | Badge |
+| Author | Text |
+| Status | Badge: Published (green) / Draft (gray) |
+| Date | Formatted createdAt |
+| Actions | Edit, Toggle Publish, Delete |
+
+#### Create/Edit Blog (`/blogs/new` or `/blogs/[id]/edit`)
+
+**Full-page form with two columns on desktop:**
+
+**Left Column (Main Content - 70% width):**
+- **Title** — Large text input
+- **Slug** — Auto-generated from title, but editable (e.g., "my-blog-post")
+- **Content** — Rich text editor (TipTap or React Quill)
+  - Should support: Bold, Italic, Headings, Lists, Links, Images, Code blocks
+- **Excerpt** — Textarea (short summary, 2-3 lines)
+
+**Right Column (Sidebar - 30% width):**
+- **Status Card:**
+  - Toggle: Published / Draft
+  - "Save as Draft" button
+  - "Publish" button (blue gradient)
+- **Cover Image:**
+  - Image preview area
+  - "Upload Image" button
+  - "Remove" link
+- **Category:**
+  - Dropdown: "AI & Machine Learning", "Web Development", "Mobile Development", "Blockchain", "UI/UX Design", "Technology Trends", "Cloud Engineering"
+- **Tags:**
+  - Multi-input (type a tag, press Enter to add, click X to remove)
+  - Shows tags as small badges
+
+**API Calls:**
+```
+GET    /api/blogs                 ← List all blogs (admin gets all including drafts)
+GET    /api/blogs/:id             ← Get single blog for editing
+POST   /api/blogs                 ← Create new blog
+PATCH  /api/blogs/:id             ← Update blog
+DELETE /api/blogs/:id             ← Delete blog
+POST   /api/upload/image          ← Upload cover image (NEW API needed)
+```
+
+---
+
+### PAGE 4: Team / Employee Management (`/employees`)
+
+**Purpose:** Manage team members shown on the website's About/Team page.
+
+#### Employee List View
+
+**Top Section:**
+- Page title: "Team Members"
+- "Add Team Member" button (top-right)
+- Toggle view: Active / Inactive / All
+
+**Display:** Card grid (3 per row on desktop, 1 on mobile)
+
+**Each Card Shows:**
+- Profile image (or initials placeholder if no image)
+- Name (bold)
+- Position (e.g., "Full Stack Developer")
+- Department badge
+- Active/Inactive status indicator (green/gray dot)
+- Order index number (small, top-right corner)
+- Action buttons: Edit, Toggle Active, Delete
+
+**Alternative:** Can also be a table view with sortable columns.
+
+#### Create/Edit Employee Modal or Page
+
+**Form Fields:**
+- **Name** — Text input (required)
+- **Position** — Text input (required, e.g., "CEO", "CTO", "Full Stack Developer")
+- **Department** — Text input or dropdown ("Engineering", "Design", "Management", "Marketing")
+- **Bio** — Textarea (short biography)
+- **Profile Image** — Image upload with preview
+- **LinkedIn URL** — Text input (URL validation)
+- **Order Index** — Number input (determines display ordering on website; lower = first)
+- **Active** — Toggle switch (if inactive, not shown on website)
+
+**Bonus Feature: Drag & Drop Reordering**
+Allow admin to drag-and-drop team members to reorder them instead of manually entering order numbers.
+
+**API Calls:**
+```
+GET    /api/employees              ← List all (admin sees all including inactive)
+GET    /api/employees/:id          ← Get single employee
+POST   /api/employees              ← Create employee
+PATCH  /api/employees/:id          ← Update employee
+DELETE /api/employees/:id          ← Delete employee
+POST   /api/upload/image           ← Upload profile image
+```
+
+---
+
+### PAGE 5: Products Management (`/products`)
+
+**Purpose:** Manage the digital products shown on the Products page of the website.
+
+#### Product List View
+
+**Top Section:**
+- Page title: "Products"
+- "Add Product" button (top-right)
+
+**Table:**
+
+| Column | Type |
+|--------|------|
+| Image | Thumbnail |
+| Title | Text (bold) |
+| Badge | e.g., "FinTech", "Social Network" |
+| Tags | Small tag badges |
+| Active | Green/Gray dot |
+| Order | Number |
+| Actions | Edit, Toggle Active, Delete |
+
+#### Create/Edit Product Form
+
+**Form Fields:**
+- **Title** — Text input (required, e.g., "EMI Management Platform")
+- **Description** — Textarea (required)
+- **Badge/Category** — Text input (e.g., "FinTech", "Social Network", "DeFi")
+- **Image** — Image upload with preview
+- **Tags** — Multi-tag input (e.g., "React", "Node.js", "PostgreSQL")
+- **Live URL** — Text input (optional, link to live product)
+- **Order Index** — Number input
+- **Active** — Toggle switch
+
+**API Calls:**
+```
+GET    /api/products              ← List all products
+GET    /api/products/:id          ← Get single product
+POST   /api/products              ← Create product
+PATCH  /api/products/:id          ← Update product
+DELETE /api/products/:id          ← Delete product
+```
+
+---
+
+### PAGE 6: Portfolio Management (`/portfolio`)
+
+**Purpose:** Manage the portfolio/case study projects shown on the Portfolio page.
+
+> [!NOTE]
+> The Portfolio page is very similar to Products but represents "client work" or "projects built," while Products are OncyTech's own products.
+
+#### Portfolio List View
+
+Same layout as Products list, with these columns:
+
+| Column | Type |
+|--------|------|
+| Image | Thumbnail |
+| Title | Text |
+| Category | "Web Applications", "Mobile Apps", "AI Platforms", "Blockchain Projects" |
+| Badge | e.g., "Communication", "FinTech" |
+| Tags | Tag badges |
+| Active | Dot indicator |
+| Actions | Edit, Toggle Active, Delete |
+
+#### Create/Edit Portfolio Form
+
+**Form Fields:**
+- **Title** — Text input (required)
+- **Description** — Textarea (required)
+- **Category** — Dropdown: "Web Applications", "Mobile Apps", "AI Platforms", "Blockchain Projects"
+- **Badge** — Text input (e.g., "Communication", "FinTech")
+- **Image** — Image upload with preview
+- **Tags** — Multi-tag input
+- **Live URL** — Text input (optional)
+- **GitHub URL** — Text input (optional)
+- **Order Index** — Number input
+- **Active** — Toggle switch
+
+**API Calls:**
+```
+GET    /api/portfolio              ← List all portfolio projects
+GET    /api/portfolio/:id          ← Get single project
+POST   /api/portfolio              ← Create project
+PATCH  /api/portfolio/:id          ← Update project
+DELETE /api/portfolio/:id          ← Delete project
+```
+
+---
+
+### PAGE 7: Demo / Consultation Requests (`/demo-requests`)
+
+**Purpose:** View and manage demo booking requests from the "Book Consultant" page.
+
+#### List View
+
+**Top Section:**
+- Page title: "Demo Requests"
+- Filter tabs: `All` | `Pending` | `Confirmed` | `Completed` | `Cancelled`
+- Search bar
+
+**Table:**
+
+| Column | Type |
+|--------|------|
+| Name | Text |
+| Email | Text (mailto link) |
+| Company | Text |
+| Service | Text |
+| Preferred Date | Formatted date |
+| Preferred Time | Time string |
+| Status | Colored badge |
+| Submitted | Formatted createdAt |
+| Actions | View, Update Status, Delete |
+
+#### Detail Modal/Drawer
+
+- All fields displayed in a clean layout
+- Full project description
+- **Status dropdown** — PENDING, CONFIRMED, COMPLETED, CANCELLED
+- **Admin Notes** — Textarea (for internal notes)
+- "Save" and "Delete" buttons
+
+**API Calls:**
+```
+GET    /api/demo-requests              ← List all
+GET    /api/demo-requests/:id          ← Get single
+PATCH  /api/demo-requests/:id          ← Update status/notes
+DELETE /api/demo-requests/:id          ← Delete
+```
+
+---
+
+### PAGE 8: Job Applications (`/job-applications`)
+
+**Purpose:** View and manage applications submitted from the Careers page.
+
+#### List View
+
+**Top Section:**
+- Page title: "Job Applications"
+- Filter tabs: `All` | `New` | `Reviewing` | `Interview` | `Hired` | `Rejected`
+- Search bar
+
+**Table:**
+
+| Column | Type |
+|--------|------|
+| Name | Text |
+| Email | Text |
+| Role Applied | Text (e.g., "Full-Stack Developer") |
+| Portfolio | Link (opens in new tab) |
+| Resume | Download button/link |
+| Status | Colored badge |
+| Date | Formatted createdAt |
+| Actions | View, Update Status, Delete |
+
+#### Detail Modal/View
+
+- All applicant info
+- Resume — Download link / embedded PDF viewer
+- Portfolio — Clickable link
+- Message — Full text
+- **Status dropdown** — NEW, REVIEWING, INTERVIEW, HIRED, REJECTED
+- **Admin Notes** — Textarea
+- "Save" and "Delete" buttons
+
+**API Calls:**
+```
+GET    /api/job-applications              ← List all
+GET    /api/job-applications/:id          ← Get single
+PATCH  /api/job-applications/:id          ← Update status/notes
+DELETE /api/job-applications/:id          ← Delete
+```
+
+---
+
+### PAGE 9: Newsletter Subscribers (`/newsletter`)
+
+**Purpose:** View and manage newsletter email subscribers from the Insights page.
+
+#### List View
+
+**Top Section:**
+- Page title: "Newsletter Subscribers"
+- Total count display
+- "Export CSV" button (top-right) — downloads all emails as CSV
+- Search bar
+- Filter: Active / Unsubscribed / All
+
+**Table:**
+
+| Column | Type |
+|--------|------|
+| # | Row number |
+| Email | Text |
+| Status | Active (green) / Unsubscribed (gray) |
+| Subscribed Date | Formatted createdAt |
+| Actions | Toggle Active, Delete |
+
+**API Calls:**
+```
+GET    /api/newsletter              ← List all subscribers
+DELETE /api/newsletter/:id          ← Remove subscriber
+PATCH  /api/newsletter/:id          ← Toggle active status
+GET    /api/newsletter/export       ← Export CSV (optional)
+```
+
+---
+
+### PAGE 10: Settings (`/settings`)
+
+**Purpose:** Admin profile management.
+
+#### Profile Section
+- **Name** — Text input (editable)
+- **Email** — Text input (read-only or editable)
+- **Role** — Display only (ADMIN / MANAGER)
+- "Save Profile" button
+
+#### Change Password Section
+- **Current Password** — Password input
+- **New Password** — Password input (min 8 chars)
+- **Confirm New Password** — Password input (must match)
+- "Change Password" button
+
+**API Calls:**
+```
+GET   /api/auth/profile              ← Get current user info
+PATCH /api/auth/profile              ← Update name/email (NEW)
+PATCH /api/auth/change-password      ← Change password (NEW)
+```
+
+---
+
+## 🎨 Design Guidelines
+
+### Color Palette
+
+| Usage | Color | Hex |
+|-------|-------|-----|
+| Primary / Buttons | Blue Gradient | `from-[#34C5F3] via-[#329DF6] to-[#224DBB]` |
+| Sidebar Background | Dark Navy | `#0f172a` |
+| Sidebar Active Link | Lighter Navy | `#1e293b` |
+| Sidebar Text | Light Gray | `#94a3b8` |
+| Sidebar Active Text | White | `#ffffff` |
+| Page Background | Light Gray | `#f8fafc` |
+| Card Background | White | `#ffffff` |
+| Text Primary | Dark | `#0f172a` |
+| Text Secondary | Gray | `#64748b` |
+| Success / Active | Green | `#22c55e` |
+| Warning / In Progress | Yellow | `#f59e0b` |
+| Danger / Rejected | Red | `#ef4444` |
+| Info / New | Blue | `#3b82f6` |
+
+### Status Badge Colors
+
+| Status | Background | Text |
+|--------|------------|------|
+| NEW | `#dbeafe` | `#1d4ed8` |
+| PENDING | `#dbeafe` | `#1d4ed8` |
+| IN_PROGRESS | `#fef3c7` | `#92400e` |
+| REVIEWING | `#fef3c7` | `#92400e` |
+| CONFIRMED | `#d1fae5` | `#065f46` |
+| COMPLETED | `#d1fae5` | `#065f46` |
+| PUBLISHED | `#d1fae5` | `#065f46` |
+| HIRED | `#d1fae5` | `#065f46` |
+| REJECTED | `#fee2e2` | `#991b1b` |
+| CANCELLED | `#fee2e2` | `#991b1b` |
+| DRAFT | `#f1f5f9` | `#475569` |
+| INACTIVE | `#f1f5f9` | `#475569` |
+
+### Component Patterns
+
+**Tables:**
+- Zebra striping (alternate row background)
+- Hover highlight on rows
+- Sticky header
+- Loading skeleton while data is fetching
+- Empty state with illustration when no data
+
+**Forms:**
+- Label above each field
+- Red asterisk (*) for required fields
+- Inline validation errors below fields
+- Disabled submit button while loading
+- Success toast notification on save
+
+**Modals:**
+- Centered overlay with backdrop blur
+- Close button (X) top-right
+- "Cancel" + "Confirm" buttons at bottom
+
+**Confirm Dialogs (for Delete actions):**
+- "Are you sure?" title
+- Description of what will happen 
+- "Cancel" (gray) + "Delete" (red) buttons
+- Must type something or click checkbox to confirm (for important deletes)
+
+---
+
+## 🔗 API Integration Notes
+
+### Base URL Configuration
+
+Create an API config file:
+```typescript
+// lib/api.ts
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+
+export const api = {
+  get: (path: string) => fetch(`${API_BASE}${path}`, { credentials: 'include' }),
+  post: (path: string, body: any) => fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',  // important for cookies
+    body: JSON.stringify(body),
+  }),
+  patch: (path: string, body: any) => fetch(`${API_BASE}${path}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(body),
+  }),
+  delete: (path: string) => fetch(`${API_BASE}${path}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  }),
+};
+```
+
+### Authentication
+- Always use `credentials: 'include'` in fetch calls (sends cookies)
+- On 401 response → redirect to login page
+- Store user info from `/api/auth/profile` in React context
+
+### Response Format
+All API responses follow this structure:
+```json
+// Success
+{
+  "status": "success",
+  "data": { ... }
+}
+
+// List endpoints
+{
+  "status": "success",
+  "results": 10,
+  "data": { "blogs": [...] }
+}
+
+// Error
+{
+  "status": "fail",
+  "message": "Error description"
+}
+
+// Validation Error
+{
+  "status": "fail",
+  "message": "Validation failed",
+  "errors": [
+    { "path": "body.email", "message": "Invalid email address" }
+  ]
+}
+```
+
+---
+
+## ✅ Build Order (Recommended)
+
+Build in this order so you can test each module independently:
+
+| Phase | Pages | Priority |
+|-------|-------|----------|
+| 1 | Login page + Auth guard + Sidebar layout | 🔴 Must do first |
+| 2 | Dashboard (stats cards + recent tables) | 🔴 High |
+| 3 | Inquiries (list + detail + status update) | 🔴 High |
+| 4 | Blogs (list + create/edit with rich text editor) | 🔴 High |
+| 5 | Employees (list + create/edit + reorder) | 🟡 Medium |
+| 6 | Products (list + create/edit) | 🟡 Medium |
+| 7 | Portfolio (list + create/edit) | 🟡 Medium |
+| 8 | Demo Requests (list + detail) | 🟡 Medium |
+| 9 | Job Applications (list + detail) | 🟢 Lower |
+| 10 | Newsletter (list + export) | 🟢 Lower |
+| 11 | Settings (profile + change password) | 🟢 Lower |
+
+---
+
+> [!TIP]
+> **Start with the Sidebar + Layout first.** Once that shell is working, every new page is just adding a new component inside the same layout.
