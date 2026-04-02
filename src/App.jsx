@@ -13,6 +13,7 @@ import Portfolio from './pages/Portfolio';
 import DemoRequests from './pages/DemoRequests';
 import JobApplications from './pages/JobApplications';
 import Newsletter from './pages/Newsletter';
+import SiteControl from './pages/SiteControl';
 import Settings from './pages/Settings';
 import AddProject from './pages/portfolio/AddProject';
 import AddProduct from './pages/products/AddProduct';
@@ -48,6 +49,7 @@ function App() {
         <Route path="/demo-requests" element={<DemoRequests />} />
         <Route path="/job-applications" element={<JobApplications />} />
         <Route path="/newsletter" element={<Newsletter />} />
+        <Route path="/site-control" element={<SiteControl />} />
         
         {/* System & Profile */}
         <Route path="/settings" element={<Settings />} />
