@@ -153,3 +153,42 @@ export const activeAdminsData = [
 export const inactiveAdminsData = [
   { id: 4, name: 'Tony Stark', email: 'tony@oncy.com', role: 'Admin', active: false, lastLogin: '2026-03-20T16:45:00Z', createdAt: '2026-03-01T10:00:00Z' },
 ];
+
+export const siteControlData = {
+  headerLogo: {
+    id: 'logo-1',
+    url: '/ONCYTECHLOGO.png',
+    type: 'image/png',
+    alt: 'OncyTech Main Logo'
+  },
+  menuItems: [
+    { id: '1', label: 'About', url: '/about' },
+    { id: '2', label: 'Services', url: '/services' },
+    { id: '3', label: 'Products', url: '/products' },
+    { id: '4', label: 'Portfolio', url: '/portfolio' },
+    { id: '5', label: 'Insights', url: '/insights' },
+    { id: '6', label: 'Careers', url: '/careers' },
+    { id: '7', label: 'Contact Us', url: '/contact' }
+  ],
+  footerText: "© 2026 OncyTech. All rights reserved.",
+  titleMedia: [
+    {
+      id: 'tm-1',
+      url: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&h=400',
+      type: 'image/jpeg',
+      alt: 'OncyTech Laptop View'
+    },
+    {
+      id: 'tm-2',
+      url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&h=400',
+      type: 'image/jpeg',
+      alt: 'OncyTech Office Space'
+    }
+  ],
+  galleryMedia: [
+    { id: 'gm-1', url: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=400&h=300', type: 'image/jpeg', alt: 'Team Meeting' },
+    { id: 'gm-2', url: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=400&h=300', type: 'image/jpeg', alt: 'Workshop' },
+    { id: 'gm-3', url: 'https://images.unsplash.com/photo-1552581234-26160f608093?auto=format&fit=crop&w=400&h=300', type: 'image/jpeg', alt: 'Discussion' },
+    { id: 'gm-4', url: 'https://images.unsplash.com/photo-1531496730074-83b638c0a7ac?auto=format&fit=crop&w=400&h=300', type: 'image/jpeg', alt: 'Conference' },
+  ]
+};
